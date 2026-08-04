@@ -1,171 +1,336 @@
+<!-- omit from toc -->
+# Flipper Zero BadUSB Script Collection
 
-# The Ultimate Flipper Zero Badusb Collection
-<img src="https://github.com/UNC0V3R3D/ressources/blob/main/badusbpicnew.png" height="380" width="1050" >
+Welcome to this comprehensive Flipper Zero BadUSB script collection! These scripts are designed for security testing and educational purposes. By downloading and using these files, you automatically agree to the MIT license and the terms outlined below.
 
-![GitHub all releases](https://img.shields.io/github/downloads/UNC0V3R3D/Flipper_Zero-BadUsb/total?logo=GitHub) ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/UNC0V3R3D/Flipper_Zero-BadUsb) ![GitHub repo size](https://img.shields.io/github/repo-size/UNC0V3R3D/Flipper_Zero-BadUsb) ![GitHub release (release name instead of tag name)](https://img.shields.io/github/v/release/UNC0V3R3D/Flipper_Zero-BadUsb?include_prereleases)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=jo.112.nas@gmail.com&lc=US&no_note=0&item_name=Thank+you+for+suppporting+UNC0V3R3D's+Github+Project.&cn=&curency_code=EUR&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted)
+## ⚠️ Disclaimer
 
+**These scripts are for authorized security testing only.** Unauthorized access to computer systems is illegal. Only use these tools on systems you own or have explicit permission to test. The creator assumes no liability for misuse.
 
-# Before you start!
+---
 
-Join the Discord-Community: https://discord.gg/WWQETvS8Vv <br>
-Flipper Related Forum: https://www.scriptattack.dev/
+## 📋 Table of Contents
 
-In order to begin, you ``must read and accept`` the usage agreement. **This project is for educational purposes only**! Please seek permission before running any of the scripts provided by me. I cannot be held responsible for any damage that may occur as a result of your use of these scripts.
-If you want to purchase a completely unique and personalized script contact me on discord.
-![](header.png)
-## Installation
+- [Features](#features)
+- [Installation](#installation)
+- [Payload Descriptions](#payload-descriptions)
+  - [DataGrabber.txt](#datagrabber-browser--wifi-credentials)
+- [Configuration Guide](#configuration-guide)
+- [Usage Examples](#usage-examples)
+- [Decryption Tools](#decryption-tools)
+- [Supported Systems](#supported-systems)
+- [License](#license)
+- [Support](#support)
 
-Windows:
+---
 
-```sh
-1. git clone https://github.com/UNC0V3R3D/Flipper_Zero-BadUsb.git
+## ✨ Features
 
-2. Use the qFlipper app to drag the files into the "BadUsb" folder on your Flipper.
+- ✅ **Multiple Export Methods**: USB mass storage or Caps Lock binary encoding with automatic fallback
+- ✅ **Browser Data Extraction**: Chrome, Firefox, Edge passwords, history, and cookies
+- ✅ **WiFi Password Grabbing**: Extracts all saved WiFi networks and credentials
+- ✅ **Error Handling**: Automatic fallback to Caps Lock encoding if USB not available
+- ✅ **Flipper Zero Compatible**: Optimized syntax for Flipper Zero BadUSB module
+- ✅ **Flexible Configuration**: Easy-to-modify defines for quick customization
+- ✅ **Auto-Cleanup**: Removes temporary files after exfiltration
+- ✅ **Base64 Encoding**: WiFi passwords encoded for safe transmission
+
+---
+
+## 📦 Installation
+
+1. **Clone or download this repository:**
+   ```bash
+   git clone https://github.com/Mr-Ender8/Flipper_Zero-BadUsb.git
+   ```
+
+2. **Copy payload files to your Flipper Zero:**
+   - Connect Flipper Zero to your computer
+   - Navigate to `badusb/` folder
+   - Copy `.txt` files to this directory
+   - Eject and use via BadUSB app on Flipper
+
+3. **Alternative: Use Flipper's file manager**
+   - Open Flipper app
+   - Navigate to BadUSB
+   - Upload `.txt` files
+
+---
+
+## 🎯 Payload Descriptions
+
+### DataGrabber - Browser & WiFi Credentials
+
+**Purpose:** Extract sensitive data including browser passwords, history, cookies, and WiFi credentials
+
+**Modes:**
+- **Mode 1 (Default):** Try USB mass storage export first, fallback to Caps Lock binary encoding
+- **Mode 2:** USB mass storage export only
+- **Mode 3:** Caps Lock binary encoding only
+
+**Configuration:**
+```text
+DEFINE EXPORT_MODE 1
+DEFINE CAPS_LOCK_DELAY_MS 50
 ```
 
-## Usage example
+**Extracted Data:**
 
-To begin using the scripts, ``please carefully read`` the "readme.md" file provided with each script. This file contains ``important information`` on how to use the script safely. Keep in mind that some scripts may ``potentially harm your system``, so be cautious and do not run unfamiliar scripts on your personal computer. To test scripts, it is recommended to ``use a virtual machine`` for safety.
+| Source | Data | Location |
+|--------|------|----------|
+| **Chrome** | Passwords (Login Data), History, Cookies | AppData\Local\Google\Chrome |
+| **Firefox** | Profiles, Cookies, Passwords | AppData\Roaming\Mozilla\Firefox |
+| **Edge** | Passwords (Login Data), History, Cookies | AppData\Local\Microsoft\Edge |
+| **WiFi** | Network SSIDs & Passwords | netsh wlan profiles |
 
-## Release History
+**Features:**
+- Auto-detects installed browsers
+- Extracts all saved WiFi networks and passwords in plaintext
+- Copies to Flipper mass storage (USB mode)
+- WiFi passwords encoded as base64 for Caps Lock mode
+- Auto-cleanup of temporary files
+- Real-time status messages
 
-* v1.0
-    * Released all the files
-* v1.1
-    * CHANGE: More options on storing the grabbed Wifi Passwords (WifiPassStealer.txt)
-    * Added ``MEMZ.exe script``
-* v1.2
-    * Added ``NoMoreSound.txt`` Script
-* v1.3
-    * A few delay_time errors ``fixed``
-* v1.4
-    * Added a lot of new files to repo
-* v1.5
-    * Added ``DeleteMicrosoftStore.txt`` and fixed link to MEMZ.exe
-* v1.6
-    * Added a bunch of new files
-* v1.7 (BIG UPDATE)
-    * Added ``a lot`` of new files, fixed a few files
-* v1.7.1 
-    * Few fixes due to delay errors
-* v1.8 
-    * Added ``ChangeWinUsername.txt`` and ``setWinPass.txt``
-* v1.9 
-    * Added a bunch of new files
-* v2.0 
-    * Added ``DownLoadASCII`` and seperated ``Selfwriting`` Ascii
-    * Instant-download Ascii is about ``20x faster``
-* v2.1
-    * Added readme files for every script
-    * Readme files contain ``important info`` about the script
-* v2.2
-    * Added the ``GoodUSB`` folder
-      
-## Usage Agreement
+**Output Files (USB Mode):**
+```
+chrome_passwords.db        (encrypted - needs decryption)
+chrome_history.db          (encrypted)
+chrome_cookies.db          (encrypted)
+firefox_*.db               (SQLite format)
+edge_passwords.db          (encrypted)
+edge_history.db            (encrypted)
+wifi_passwords.txt         (plaintext SSID:password)
+```
 
-By downloading and using the scripts provided by UNC0V3R3D, you are automatically agreeing to the following usage agreement. If you do not agree to the terms of this agreement, you are not permitted to download or use the scripts.
+**Output (Caps Lock Mode):**
+- WiFi passwords encoded as binary pattern (1=Caps Lock toggle, 0=space)
+- Easily decodable by recording Caps Lock LED state or keyboard input
 
-1. You acknowledge that UNC0V3R3D ``is not responsible`` for your actions or any damage you may cause as a result of using the scripts.
-2. You are ``permitted`` to share all of the files.
-3. You are ``allowed`` to modify the files, but are still responsible for your own actions.
-4. If you are using my scripts in your own repo, please consider giving credits.
-5. You are allowed to do everything the license says...
+---
 
-# Instructions for newbies
-In this quick instruction you are going to learn how to setup the scripts and use them properly.
-If you have any questions after reading this instruction, just DM me on Discord (UNC0V3R3D#8662).
+## ⚙️ Configuration Guide
 
-## Installation
+### Basic Configuration
 
-``` sh
-1. Clone/Download the files directly from the repo or download the latest release.
-2. Extract the files anywhere you like
-3. If you are using a phone, just install the Flipper Zero mobile app.
-4. If you are using a PC, just install the qFlipper app: https://flipperzero.one/update
-5. Connect your Flipper via Bluetooth if you are using a phone, or connect it via usb if you are on PC.
-6. Open qFlipper --> SD Card --> badusb --> Move the files here.
-7. Now you are done with moving the files to your Flipper.
- ```
+Edit the `DEFINE` section at the top of the payload:
 
-## Explanation of the files
+```text
+REM ===== DEFINE CONFIGURATION =====
+DEFINE EXPORT_MODE 1           # 1=USB+fallback, 2=USB only, 3=CapsLock only
+DEFINE CAPS_LOCK_DELAY_MS 50   # Milliseconds between toggles
+REM ===== END DEFINES =====
+```
 
-Before using the files on your Flipper, it is important to thoroughly understand them. While the majority of the files in my BadUsb repository are relatively harmless, there are some that may potentially cause serious damage. It is important to exercise caution when using these files.
+### Export Modes
 
-<h3> Understanding DuckyScript </h3>
+| Mode | Method | Speed | Reliability | Best For |
+|------|--------|-------|-------------|----------|
+| **1** | USB First → Caps Lock | ⚡ Fast (USB) | ✅ High | Most situations |
+| **2** | USB Only | ⚡ Very Fast | 🔶 Medium | Air-gapped targets |
+| **3** | Caps Lock Only | 🐢 Slow | ✅ Very High | Always reliable |
 
-* All BadUsb-Scripts are written in the ``DuckyScript 1.0`` language.
-* The language is kind of ``easy`` to understand and to learn.
-* If you really want to look further into this please refer to this [Documentation].
-* The kind of ``hard part`` are the PowerShell scripts.
-* We use PowerShell or PowerShell scripts in ``97%`` of all DuckyScripts.
-* PowerShell or PowerShell scripts give us ``full power`` over the machine.
-* If you want to learn how to write PowerShell scripts after learning the DuckyScript basics please refer to this [PowerShell-Guide].
-* In BadUsb scripts, you will most likely find comments every few lines, that start with the command ``REM`` at the beginning.
-* Those comments often ``explain the whole process`` and help you a lot.
-* That's how you understand certain BadUsb scripts, but you can also often already identify the script by its file name.
+**To use Mode 2 (USB only):**
+```text
+DEFINE EXPORT_MODE 2
+```
 
-<h3> Using the scripts properly </h3>
+**To use Mode 3 (Caps Lock only):**
+```text
+DEFINE EXPORT_MODE 3
+```
 
-* So now that we have prepared everything, we can start to test our first script!
-* We are going to run the first script on our ``own`` PC.
-* Of course, you don't want to cause damage to your PC, so we are going to choose a harmless script.
-* Let's choose a script that will draw something in the Notepad.
-* I chose a [script] from my ASCII repository.
-* If you want to open the text file on your phone or pc to see what is inside feel free to do so.
-* To start you are going to start the Flipper and find the ``Bad USB`` category.
-* There you will see all the scripts you have imported from your PC or phone.
-* Now choose a harmless script and wait until the Flipper tells you to connect to a PC via the USB cable.
-* Just press the middle button to start the script.
-* Now the script should open Notepad and write a simple sentence "Hacked by UNC0V3R3D".
-* If you succeeded congrats! You have just run your very first script.
-* If something went wrong then please scroll further down to see the ``Troubleshooting section`` and follow the steps.
+### Adjusting for Target System
 
-<h3> Troubleshooting Problems </h3>
+| Issue | Solution |
+|-------|----------|
+| Caps Lock too fast | Increase `CAPS_LOCK_DELAY_MS` to 75-100 |
+| Caps Lock too slow | Decrease to 30-50 |
+| USB not detected | Ensure Flipper is in mass storage mode |
+| PowerShell blocked | Payload automatically falls back to Caps Lock |
+| Files not found | Script skips missing files with error handling |
 
-First of all, you have to identify the problem. Then you can look at the list below and maybe you will recognize your problem.
+---
 
-* ``1.0`` <b> The script open random things and typed the text somewhere, where it shouldn't be. </b>
-  * <em> So this is often caused by ``too short delays`` between the commands. In the BadUsb script file, you should see some commands, that start with ``DELAY``
-       and then there is a number behind it. ``Example: DELAY 500``. The number stands for ``milliseconds``. Changing the delay to a ``higher number`` than the current number should solve the problem ``(DELAY 500 --> DELAY 700)`` </em>
-       
-* ``1.1`` <b> The Flipper shows an error like this: ``ERROR: line 5`` </b>
-  * <em> If the Flipper prints random errors like this you should check the ``text file``. The most common thing causing this error is apparently a ``random blank line``
-  between the commands. Otherwise, make sure there is no line containing the ``"LOCALE .."`` command. It doesn't properly work on the Flipper, yeah I do not know why that is. If there is still an error, look at the line where the error is coming from and make sure there is no ``space`` at the beginning of the line. </em>
-  
-* ``1.3`` <b> The Flipper shows an random overlayed error in line 1 </b>
-  * <em> This is a new error/bug in the official firmware! To get around this error you will need to install an older version of the official firmware or switch to a third-party firmware like "Rogue Master". </em>
+## 🚀 Usage Examples
 
-* I hope that you find a a solution for your problem. If you need help feel free to always contact me via Discord or Email.
+### Example 1: Default - USB with Fallback
+```text
+DEFINE EXPORT_MODE 1
+DEFINE CAPS_LOCK_DELAY_MS 50
+```
+- Try USB first, fallback to Caps Lock if not available
+- Good for most scenarios
 
-[PowerShell-Guide]: https://www.youtube.com/watch?v=IABNJEl2ZWk
-[Documentation]: https://web.archive.org/web/20220816200129/http://github.com/hak5darren/USB-Rubber-Ducky/wiki/Duckyscript
-[script]: https://github.com/UNC0V3R3D/Flipper_Zero-BadUsb/blob/main/BadUsb-Collection/ASCII/Selfwriting/SimpleTroll.txt
-[qFlipper]: https://flipperzero.one/update
-[Patreon]: https://patreon.com/user?u=33918929&utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_creator&utm_content=join_link
+### Example 2: USB Only (Fast)
+```text
+DEFINE EXPORT_MODE 2
+DEFINE CAPS_LOCK_DELAY_MS 50
+```
+- Only exports via USB mass storage
+- Fastest method but requires USB connection
 
-## Sponsoring
+### Example 3: Caps Lock Only (Reliable)
+```text
+DEFINE EXPORT_MODE 3
+DEFINE CAPS_LOCK_DELAY_MS 75
+```
+- Only uses Caps Lock encoding
+- Works on air-gapped systems
+- Increased delay for reliability
 
-If you would like to help me making this project even greater feel free to sponsor me on [Patreon].
+### Example 4: Slow Network
+```text
+DEFINE EXPORT_MODE 1
+DEFINE CAPS_LOCK_DELAY_MS 100
+```
+- Higher delay for slow/unreliable targets
+- Better success rate on laggy systems
 
-## Meta
+---
 
-If you have any idea on how to make this Instruction to BadUsb scripts better, feel free to open an Issue or contact me via Discord. :)
+## 🔐 Decryption Tools
 
-UNC0V3R3D – [@GitHub](https://github.com/UNC0V3R3D) – unc0v3r3d@proton.me
+Browser databases are encrypted. Use these tools to decrypt offline:
 
-Distributed under the MIT license. See ``LICENSE.md`` for more information. 
+| Tool | Purpose | Target |
+|------|---------|--------|
+| **[ChromePass](https://www.nirsoft.net/utils/chromepass.html)** | Decrypt Chrome passwords | Chrome/Chromium |
+| **[Edge Passwords Viewer](https://www.nirsoft.net/utils/edgepass.html)** | Decrypt Edge passwords | Microsoft Edge |
+| **[LaZagne](https://github.com/AlessandroZ/LaZagne)** | Multi-browser password extraction | All browsers |
+| **[Firefox Credentials Viewer](https://www.nirsoft.net/utils/firefoxpassview.html)** | Decrypt Firefox passwords | Firefox |
+| **[SQLiteBrowser](https://sqlitebrowser.org/)** | View SQLite databases | Firefox/Chrome history |
 
-[https://github.com/UNC0V3R3D/Flipper_Zero-BadUsb](https://github.com/UNC0V3R3D/)
+**Usage:**
+```bash
+# With ChromePass
+chromepass.exe -inputfile chrome_passwords.db
 
+# With Edge Passwords Viewer
+edgepass.exe -inputfile edge_passwords.db
 
-## Credits
+# With LaZagne
+python -m laZagne all -path /path/to/extracted/data
+```
 
-* [UberGuidoZ] , [FalsePhilosopher] and [I-am-Jakoby]
-* Make sure to check them out! They are the reason this repository exists. When I started learning how to create badusb scripts i learnt from them.
+### WiFi Password Extraction
 
+WiFi passwords from `wifi_passwords.txt` are in plaintext:
+```
+SSID_Name : Key Content: YourPasswordHere
+HomeNetwork : Key Content: securepass123
+CoffeeShop : Key Content: publicwifi456
+```
 
-[release]: https://github.com/UNC0V3R3D/Flipper_Zero-BadUsb/releases
-[UberGuidoZ]: https://github.com/UberGuidoZ
-[FalsePhilosopher]: https://github.com/FalsePhilosopher
-[I-am-Jakoby]: https://github.com/I-Am-Jakoby
+Simply extract the password after `Key Content:` for each network.
+
+---
+
+## 💻 Supported Systems
+
+| OS | Version | Support |
+|----|---------|---------|
+| Windows | 10, 11 | ✅ Full |
+| Windows | 7, 8 | ⚠️ Partial (may work) |
+| macOS | Any | ❌ Not supported |
+| Linux | Any | ❌ Not supported |
+
+**Requirements:**
+- PowerShell 3.0+
+- Admin privileges recommended for system file access
+- [Optional] Flipper Zero in mass storage mode (for USB export)
+
+---
+
+## 📊 Caps Lock Encoding Explanation
+
+The Caps Lock encoding method converts WiFi password data to binary and uses keyboard state changes:
+
+- **`1` (binary bit)** → Toggle Caps Lock (±)
+- **`0` (binary bit)** → Send space (pause)
+
+**Example:** `A` (ASCII 65) = `01000001` in binary
+```
+0 → space
+1 → Caps Lock toggle
+0 → space
+0 → space
+0 → space
+0 → space
+0 → space
+1 → Caps Lock toggle
+```
+
+**Decoding Method:**
+1. Record Caps Lock LED state changes during payload execution
+2. Convert LED states to binary (ON=1, OFF=0)
+3. Decode base64 string from binary
+4. Decode to ASCII text
+
+**Tools for decoding:**
+```bash
+# Convert Caps Lock LED pattern to base64, then:
+echo "base64_string_here" | base64 -d
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| **Flipper not recognized** | Ensure BadUSB firmware is up-to-date |
+| **No data extracted** | Verify target system has browsers/WiFi installed |
+| **PowerShell blocked** | Payload automatically falls back to Caps Lock (Mode 1) |
+| **USB mount not detected** | Manually connect Flipper in mass storage mode |
+| **Caps Lock too slow** | Reduce delay with `CAPS_LOCK_DELAY_MS 30` |
+| **Caps Lock too fast** | Increase delay with `CAPS_LOCK_DELAY_MS 100` |
+| **Database files encrypted** | Use decryption tools listed in [Decryption Tools](#decryption-tools) |
+| **WiFi passwords show as asterisks** | Use `wifi_passwords.txt` - this payload extracts in plaintext |
+
+---
+
+## 📝 License
+
+All scripts in this repository are licensed under the **MIT License**. See LICENSE file for details.
+
+```
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, and merge.
+```
+
+---
+
+## 📧 Support
+
+Have questions or issues?
+
+- **GitHub Issues:** Open an issue on this repository
+- **Discord:** Reach out via Discord
+- **Email:** Check GitHub profile for contact info
+
+---
+
+## ⚖️ Legal Notice
+
+**Use responsibly and legally.** These tools are provided for:
+- ✅ Authorized security testing
+- ✅ Educational purposes on your own systems
+- ✅ Penetration testing (with written permission)
+
+**NOT for:**
+- ❌ Unauthorized system access
+- ❌ Data theft
+- ❌ Illegal activities
+- ❌ Testing without explicit permission
+
+By using these scripts, you accept full responsibility for your actions. The creator assumes no liability for misuse or damage caused.
+
+---
+
+**Happy hacking! Stay ethical. 🔒**
+
+*Last Updated: 2026-08-04*
